@@ -256,6 +256,8 @@ draw:
 
 ;; exit() -- exit the program with code 0
 exit:
+	mov ax, 0x0003
+	int 0x10
 	mov ax, 0x4C00
 	int 0x21
 
