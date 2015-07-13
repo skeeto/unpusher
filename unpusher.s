@@ -87,20 +87,19 @@ decode:
 	shl ax, cl
 	add ch, 8
 .skip_read:
-	test ah, 0x80
-	jz .single
-.multiple:
 	shl ax, 1
+	jc .multiple
+.single:
+	mov dl, 1
+	dec ch
+	jmp .decode_tile
+.multiple:
 	mov dl, ah
 	shr dl, 5
 	add dl, 2
 	shl ax, 3
 	sub ch, 4
 	jmp .decode_tile
-.single:
-	mov dl, 1
-	shl ax, 1
-	dec ch
 .decode_tile:
 	mov dh, ah
 	test ah, 0x80
