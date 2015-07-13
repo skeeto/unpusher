@@ -149,21 +149,42 @@ decode:
 ;; Inputs:
 ;; bl : buffer width
 ;; bh : buffer height
+;; Working state:
+;; ax : offset to center map
+;; di : pointer into map
+;; si : pointer to buf
+;; cx : x counter
+;; bp : y counter
+;; dx : y stop
 buf_to_map:
 	push es
 	push ds
 	pop es
-	xor ax, ax
+;; Computer center
+	mov ax, 40
+	sub al, bl
+	shr al, 1
+	mov dx, 25
+	sub dl, bh
+	jz .no_slide_up
+	dec dl			; round down (pusher.exe bug)
+.no_slide_up:
+	shr dl, 1
+	add [px], ax		; adjust player x
+	add [py], dx		; adjust player y
+	imul dx, 40
+	add ax, dx		; destination offset
+	xor bp, bp
 	mov si, buf
 	movzx dx, bh		; 16-bit height
+	imul dx, 40
 .loop:
-	mov bp, ax
-	imul bp, 40
 	lea di, [map+bp]
+	add di, ax
 	movzx cx, bl
 	rep movsb
-	inc ax
-	cmp ax, dx
+	add bp, 40
+	cmp bp, dx
 	jl .loop
 	pop es
 
