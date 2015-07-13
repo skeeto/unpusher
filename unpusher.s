@@ -104,7 +104,7 @@ select_level:
 	dec bx
 	jmp .num
 .right:
-	cmp bx, [level_count]	; upper bound
+	cmp bx, nlevels		; upper bound
 	je .num
 	inc bx
 	jmp .num
