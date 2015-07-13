@@ -99,9 +99,13 @@ select_level:
 	je .finish
 	jmp .num
 .left:
+	cmp bx, 1		; lower bound
+	je .num
 	dec bx
 	jmp .num
 .right:
+	cmp bx, [level_count]	; upper bound
+	je .num
 	inc bx
 	jmp .num
 .finish:
@@ -240,7 +244,6 @@ buf_to_map:
 play:
 	call draw
 	call getkey
-
 	cmp ax, VK_ESC
 	jne play
 	jmp exit
