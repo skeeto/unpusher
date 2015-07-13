@@ -54,8 +54,8 @@ vga_initialize:
 ;; reset() -- fills map and reset player position
 reset:
 	mov al, 0
-	mov word [px], 0
-	mov word [py], 26
+	mov byte [px], 0
+	mov byte [py], 26
 	mov word [slots], 0xFFFF
 	mov cx, 40*25
 	mov di, map
@@ -196,11 +196,9 @@ decode:
 	mov cl, ch
 	sub cl, 8
 	shl ax, cl
-	movzx ax, ah
-	mov [px], ax
+	mov [px], ah
 	lodsb
-	movzx ax, al
-	mov [py], ax
+	mov [py], al
 
 ;; buf_to_map() -- copy decoded buffer to map
 ;; Inputs:
@@ -217,18 +215,18 @@ buf_to_map:
 	push es
 	push ds
 	pop es
-;; Computer center
+;; Compute center
 	mov ax, 40
 	sub al, bl
-	shr al, 1
+	shr al, 1		; (40 - width) / 2
 	mov dx, 25
 	sub dl, bh
 	jz .no_slide_up
 	dec dl			; round down (pusher.exe bug)
 .no_slide_up:
-	shr dl, 1
-	add [px], ax		; adjust player x
-	add [py], dx		; adjust player y
+	shr dl, 1		; (25 - height - 1) / 2
+	add [px], al		; adjust player x
+	add [py], dl		; adjust player y
 	imul dx, 40
 	add ax, dx		; destination offset
 	xor bp, bp
@@ -249,6 +247,14 @@ play:
 	call draw
 	call getkey
 	cmp ax, VK_SPACE
+	je reset
+	cmp ax, VK_LEFT
+	je reset
+	cmp ax, VK_RIGHT
+	je reset
+	cmp ax, VK_UP
+	je reset
+	cmp ax, VK_DOWN
 	je reset
 	jmp play
 
@@ -273,9 +279,11 @@ draw:
 	mov ax, [tiles+bx]
 	stosw
 	loop .step
-	mov bx, [py]
+	mov bl, [py]
 	imul bx, 40
-	add bx, [px]
+	mov al, [px]
+	add bx, ax
+	movzx ax, al
 	add bx, bx
 	mov word [es:bx], PLAYER
 	ret
@@ -295,8 +303,8 @@ tiles:	dw EMPTY, WALL, BARREL, 0, 0, 0, TARGET, COMPLETED
 %include "original60.s"
 
 section .bss
-px:	resw 1
-py:	resw 1
+px:	resb 1
+py:	resb 1
 slots:	resw 1
 map:	resb 80*25
 buf:	resb 80*25
