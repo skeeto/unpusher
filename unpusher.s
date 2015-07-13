@@ -38,7 +38,9 @@ section .text
 _start:
 	xor ax, ax
 
-;; reset() -- fills map with al and resets player position
+;; reset() -- fills map and reset player position
+;; Inputs:
+;; al : tile type to fill map
 reset:
 	mov word [px], 0
 	mov word [py], 0
@@ -55,16 +57,19 @@ vga_initialize:
 	mov es, ax
 
 	mov si, level_01
-;; decode() -- decodes level at si into map
-;; ax : the next two bytes of input
+;; decode() -- decodes level at si into buf
+;; Inputs:
+;; si : pointer to input
+;; Outputs:
 ;; bh : map height
 ;; bl : map width
+;; Working state:
+;; ax : the next two bytes of input
 ;; bp : total number of tiles
 ;; di : number of tiles written
 ;; ch : number of input bits in ax
 ;; dl : number of output tiles
 ;; dh : tile code
-;; si : pointer to input
 decode:
 	lodsw
 	mov bx, ax
@@ -118,7 +123,7 @@ decode:
 	sub cl, ch
 	shr ax, cl		; shift ah bits all the way to the right
 .write_loop:
-	mov [map+di], dh
+	mov [buf+di], dh
 	inc di
 	dec dl
 	jnz .write_loop
@@ -126,11 +131,11 @@ decode:
 	jl .step
 .player_pos:
 	cmp ch, 8
-	jge .preread
+	jge .x_was_buffered
 	lodsb
 	mov ah, al
 	mov ch, 8
-.preread:
+.x_was_buffered:
 	mov cl, ch
 	sub cl, 8
 	shl ax, cl
@@ -139,6 +144,28 @@ decode:
 	lodsb
 	movzx ax, al
 	mov [py], ax
+
+;; buf_to_map() -- copy decoded buffer to map
+;; Inputs:
+;; bl : buffer width
+;; bh : buffer height
+buf_to_map:
+	push es
+	push ds
+	pop es
+	xor ax, ax
+	mov si, buf
+	movzx dx, bh		; 16-bit height
+.loop:
+	mov bp, ax
+	imul bp, 40
+	lea di, [map+bp]
+	movzx cx, bl
+	rep movsb
+	inc ax
+	cmp ax, dx
+	jl .loop
+	pop es
 
 ;; draw() -- full redraw of map onto vga display
 draw:
