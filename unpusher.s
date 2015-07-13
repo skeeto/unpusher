@@ -237,6 +237,22 @@ buf_to_map:
 	jl .loop
 	pop es
 
+play:
+	call draw
+	call getkey
+
+	cmp ax, VK_ESC
+	jne play
+	jmp exit
+
+;; getkey() -- wait for keystroke and return it
+;; Outputs:
+;; ax : ASCII + scan code for input key
+getkey:
+	mov ah, 0
+	int 0x16
+	ret
+
 ;; draw() -- full redraw of map onto vga display
 draw:
 	mov si, map
@@ -253,6 +269,7 @@ draw:
 	add bx, [px]
 	add bx, bx
 	mov word [es:bx], PLAYER
+	ret
 
 ;; exit() -- exit the program with code 0
 exit:
