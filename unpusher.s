@@ -34,6 +34,13 @@ org 0x100
 %define TARGET		(BG_GREEN|BLACK|0x2E)
 %define WALL		(BG_YELLOW|DARK_RED|0xB1)
 
+%define VK_LEFT		0x4b00
+%define VK_RIGHT	0x4d00
+%define VK_UP		0x4800
+%define VK_DOWN		0x5000
+%define VK_SPACE	0x3920
+%define VK_ESC		0x011b
+
 section .text
 _start:
 	xor ax, ax
@@ -51,14 +58,57 @@ reset:
 
 ;; vga_initialize() -- sets VGA to 40x25 16-color text mode
 vga_initialize:
-	xor ax, ax
+	xor ax, ax		; remove?
 	int 0x10
 	mov ax, 0xB800
 	mov es, ax
 
-	mov bx,	2		; level selection
-	add bx, bx
+;; select_level() -- interface for selecting the level
+;; Outputs:
+;; si : pointer to compressed level data
+select_level:
+	mov si, query
+	mov di, 12*80+10*2
+	mov ax, BG_BLUE|LIGHT_YELLOW
+.write:	lodsb
+	stosw
+	cmp al, 0
+	jnz .write
+	mov si, di		; save end-of-string location
+	mov bx,	1		; initial level selection
+	mov cx, 10		; constant
+.num:	mov di, si
+	mov ax, bx
+	xor dx, dx
+	div cx
+	add ax, BG_BLUE|LIGHT_YELLOW|'0'
+	cmp al, '0'
+	jne .non_blank
+	mov al, 0
+.non_blank:
+	stosw
+	add dx, BG_BLUE|LIGHT_YELLOW|'0'
+	mov ax, dx
+	stosw
+	call getkey
+	cmp ax, VK_LEFT
+	je .left
+	cmp ax, VK_RIGHT
+	je .right
+	cmp ax, VK_SPACE
+	je .finish
+	jmp .num
+.left:
+	dec bx
+	jmp .num
+.right:
+	inc bx
+	jmp .num
+.finish:
+	dec bx			; 0-index
+	add bx, bx		; word-size
 	mov si, [levels+bx]
+
 ;; decode() -- decodes level at si into buf
 ;; Inputs:
 ;; si : pointer to input
@@ -74,10 +124,10 @@ vga_initialize:
 ;; dh : tile code
 decode:
 	lodsw
-	mov bx, ax
+	mov bx, ax		; long term storage
 	movzx bp, ah
 	movzx ax, al
-	imul bp, ax
+	imul bp, ax		; compute total number of tiles
 	xor di, di
 	mov ch, 0
 .step:
@@ -208,20 +258,6 @@ draw:
 exit:
 	mov ax, 0x4C00
 	int 0x21
-
-;; tmp
-sleep:
-	push ax
-	push cx
-	push dx
-	mov cx, 1
-	mov dx, 0
-	mov ax, 0x8600
-	int 0x15
-	pop ax
-	pop cx
-	pop dx
-	ret
 
 section .data
 query:	db 'Number of maze:', 0
