@@ -43,25 +43,28 @@ org 0x100
 
 section .text
 _start:
-	xor ax, ax
-
-;; reset() -- fills map and reset player position
-;; Inputs:
-;; al : tile type to fill map
-reset:
-	mov word [px], 0
-	mov word [py], 0
-	mov word [slots], 0xFFFF
-	mov cx, 40*25
-	mov di, map
-	rep stosb
 
 ;; vga_initialize() -- sets VGA to 40x25 16-color text mode
 vga_initialize:
-	xor ax, ax		; remove?
+	xor ax, ax
 	int 0x10
 	mov ax, 0xB800
 	mov es, ax
+
+;; reset() -- fills map and reset player position
+reset:
+	mov al, 0
+	mov word [px], 0
+	mov word [py], 26
+	mov word [slots], 0xFFFF
+	mov cx, 40*25
+	mov di, map
+	push es
+	push ds
+	pop es
+	rep stosb
+	pop es
+	call draw
 
 ;; select_level() -- interface for selecting the level
 ;; Outputs:
@@ -75,7 +78,7 @@ select_level:
 	cmp al, 0
 	jnz .write
 	mov si, di		; save end-of-string location
-	mov bx,	1		; initial level selection
+	mov bx,	[mazeid]	; load selection
 	mov cx, 10		; constant
 .num:	mov di, si
 	mov ax, bx
@@ -109,6 +112,7 @@ select_level:
 	inc bx
 	jmp .num
 .finish:
+	mov [mazeid], bx	; save selection
 	dec bx			; 0-index
 	add bx, bx		; word-size
 	mov si, [levels+bx]
@@ -244,9 +248,9 @@ buf_to_map:
 play:
 	call draw
 	call getkey
-	cmp ax, VK_ESC
-	jne play
-	jmp exit
+	cmp ax, VK_SPACE
+	je reset
+	jmp play
 
 ;; getkey() -- wait for keystroke and return it
 ;; Outputs:
@@ -254,6 +258,8 @@ play:
 getkey:
 	mov ah, 0
 	int 0x16
+	cmp ax, VK_ESC
+	je exit
 	ret
 
 ;; draw() -- full redraw of map onto vga display
@@ -282,6 +288,7 @@ exit:
 	int 0x21
 
 section .data
+mazeid:	dw 1
 query:	db 'Number of maze:', 0
 win:	db 'Congratulations !!!', 0
 tiles:	dw EMPTY, WALL, BARREL, 0, 0, 0, TARGET, COMPLETED
