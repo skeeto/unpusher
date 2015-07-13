@@ -123,10 +123,16 @@ decode:
 	dec dl
 	jnz .write_loop
 	cmp di, bp
-	jle .step
+	jl .step
 .player_pos:
-	mov cl, 8
-	sub cl, ch
+	cmp ch, 8
+	jge .preread
+	lodsb
+	mov ah, al
+	mov ch, 8
+.preread:
+	mov cl, ch
+	sub cl, 8
 	shl ax, cl
 	movzx ax, ah
 	mov [px], ax
@@ -148,6 +154,7 @@ draw:
 	mov bx, [py]
 	imul bx, 40
 	add bx, [px]
+	add bx, bx
 	mov word [es:bx], PLAYER
 
 ;; exit() -- exit the program with code 0
