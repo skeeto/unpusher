@@ -102,10 +102,8 @@ decode:
 	jmp .decode_tile
 .decode_tile:
 	mov dh, ah
-	test ah, 0x80
-	jz .size_two
-	test ah, 0x40
-	jz .size_two
+	cmp ah, 0xC0
+	jb .size_two
 .size_three:
 	shr dh, 5
 	shl ax, 3
