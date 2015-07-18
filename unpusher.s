@@ -28,7 +28,8 @@ org 0x100
 %define BG_GRAY		(0x07 << 12)
 
 %define EMPTY		(BG_BLACK|BLACK)
-%define PLAYER		(LIGHT_RED|0x01)
+%define PLAYER_EMPTY	(LIGHT_RED|0x01)
+%define PLAYER_TARGET	(BG_GREEN|DARK_RED|0x01)
 %define BARREL		(BG_BLACK|LIGHT_YELLOW|0x03)
 %define COMPLETED	(BG_GREEN|LIGHT_YELLOW|0x06)
 %define TARGET		(BG_GREEN|BLACK|0x2E)
@@ -285,7 +286,12 @@ draw:
 	add bx, ax
 	movzx ax, al
 	add bx, bx
-	mov word [es:bx], PLAYER
+	mov ax, [es:bx]
+	cmp ax, EMPTY
+	je .empty
+	mov word [es:bx], PLAYER_TARGET
+	ret
+.empty	:mov word [es:bx], PLAYER_EMPTY
 	ret
 
 ;; exit() -- exit the program with code 0
