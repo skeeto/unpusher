@@ -250,13 +250,20 @@ play:
 	cmp ax, VK_SPACE
 	je reset
 	cmp ax, VK_LEFT
-	je reset
-	cmp ax, VK_RIGHT
-	je reset
-	cmp ax, VK_UP
-	je reset
-	cmp ax, VK_DOWN
-	je reset
+	jne .right
+	dec byte [px]
+	jmp play
+.right:	cmp ax, VK_RIGHT
+	jne .up
+	inc byte [px]
+	jmp play
+.up:	cmp ax, VK_UP
+	jne .down
+	dec byte [py]
+	jmp play
+.down:	cmp ax, VK_DOWN
+	jne play
+	inc byte [py]
 	jmp play
 
 ;; getkey() -- wait for keystroke and return it
